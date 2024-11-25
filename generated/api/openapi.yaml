@@ -1,0 +1,153 @@
+openapi: 3.0.0
+info:
+  description: "This is a sample server Petstore server. For this sample, you can\
+    \ use the api key `special-key` to test the authorization filters."
+  license:
+    name: Apache-2.0
+    url: https://www.apache.org/licenses/LICENSE-2.0.html
+  title: OpenAPI Petstore
+  version: 1.0.0
+servers:
+- url: http://petstore.swagger.io/v2
+tags:
+- description: Everything about your Pets
+  name: pet
+- description: Access to Petstore orders
+  name: store
+- description: Operations about user
+  name: user
+paths:
+  /recipes:
+    get:
+      description: returns an array of recipes from a recipe table
+      operationId: GetAllRecipes
+      responses:
+        "200":
+          content:
+            application/xml:
+              schema:
+                items:
+                  $ref: '#/components/schemas/ApiResponseRecipes'
+                type: array
+            application/json:
+              schema:
+                items:
+                  $ref: '#/components/schemas/ApiResponseRecipes'
+                type: array
+          description: successful operation
+        "404":
+          description: not found
+        "500":
+          description: internal server error
+      summary: returns an array of recipes
+  /ingredients:
+    get:
+      description: returns an array of ingredients from a ingredient table.
+      operationId: GetAllIngredients
+      responses:
+        "200":
+          content:
+            application/xml:
+              schema:
+                items:
+                  $ref: '#/components/schemas/ApiResponseIngredients'
+                type: array
+            application/json:
+              schema:
+                items:
+                  $ref: '#/components/schemas/ApiResponseIngredients'
+                type: array
+          description: successful operation
+        "404":
+          description: not found
+        "500":
+          description: internal server error
+      summary: returns an array of ingredients
+components:
+  schemas:
+    Recipe:
+      description: Description of recipe in the storage database
+      example:
+        name: name
+        brew_time_seconds: 1
+        description: description
+        id: 6
+      properties:
+        id:
+          format: int64
+          type: integer
+        name:
+          type: string
+        description:
+          type: string
+        brew_time_seconds:
+          format: int64
+          type: integer
+      title: Recipe
+      type: object
+    Ingredient:
+      description: Description of ingredient in the storage database
+      example:
+        name: name
+        description: description
+        id: 6
+      properties:
+        id:
+          format: int64
+          type: integer
+        name:
+          type: string
+        description:
+          type: string
+      title: Ingredient
+      type: object
+    ApiResponseRecipes:
+      description: Response with a list of recipes
+      example:
+        recipes:
+        - name: name
+          brew_time_seconds: 1
+          description: description
+          id: 6
+        - name: name
+          brew_time_seconds: 1
+          description: description
+          id: 6
+        code: 0
+        message: message
+      properties:
+        code:
+          format: int32
+          type: integer
+        message:
+          type: string
+        recipes:
+          items:
+            $ref: '#/components/schemas/Recipe'
+          type: array
+      title: Recipes response
+      type: object
+    ApiResponseIngredients:
+      description: Response with a list of ingredients
+      example:
+        code: 0
+        ingredients:
+        - name: name
+          description: description
+          id: 6
+        - name: name
+          description: description
+          id: 6
+        message: message
+      properties:
+        code:
+          format: int32
+          type: integer
+        message:
+          type: string
+        ingredients:
+          items:
+            $ref: '#/components/schemas/Ingredient'
+          type: array
+      title: Ingredients response
+      type: object

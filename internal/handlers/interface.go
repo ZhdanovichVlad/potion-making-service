@@ -6,5 +6,6 @@ import (
 )
 
 type Repository interface {
-	GetIngredients(ctx context.Context) (entity.Ingredient, error)
+	GetIngredients(ctx context.Context) ([]entity.Ingredient, error)
+	GetRecipes(ctx context.Context) ([]entity.Recipe, error)
 }

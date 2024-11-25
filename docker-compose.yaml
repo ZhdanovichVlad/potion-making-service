@@ -1,0 +1,40 @@
+version: "3.9"
+
+services:
+  postgres:
+    hostname: postgres
+    image: postgres:15
+    ports:
+      - "${PORT_LOCAL}:${PORT_INNER}"
+    networks:
+      - back-tier
+    environment:
+      POSTGRES_USER: "${POSTGRES_USER}"
+      POSTGRES_PASSWORD: "${POSTGRES_PASSWORD}"
+      POSTGRES_DB: "${POSTGRES_DB}"
+
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready", "-d", "${POSTGRES_DB}", "-U", "${POSTGRES_USER}"]
+      interval: 10s
+      timeout: 30s
+      retries: 5
+      start_period: 80s
+    env_file:
+      - .env
+
+  migrations:
+    build:
+      context: .
+      dockerfile: Dockerfile.migrations
+    networks:
+      - back-tier
+    depends_on:
+      postgres:
+        condition:
+          service_healthy
+    env_file:
+      - .env
+
+
+networks:
+  back-tier: {}

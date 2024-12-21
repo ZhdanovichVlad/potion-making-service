@@ -1,9 +1,10 @@
 -- +goose Up
 -- +goose StatementBegin
 CREATE TABLE IF NOT EXISTS recipes_to_ingredients (
-    recipe_id BIGINT NOT NULL,
-    ingredient_id BIGINT NOT NULL,
-    amount int NOT NULL
+    recipe_id UUID  REFERENCES recipes(id),
+    ingredient_id UUID REFERENCES ingredients(id),
+    amount INT NOT NULL,
+    PRIMARY KEY (recipe_id, ingredient_id)
 );
 -- +goose StatementEnd
 

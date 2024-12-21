@@ -1,10 +1,11 @@
 -- +goose Up
 -- +goose StatementBegin
+CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 CREATE TABLE IF NOT EXISTS recipes (
-    id BIGSERIAL PRIMARY KEY,
-    name VARCHAR NOT NULL,
+    id UUID NOT NULL PRIMARY KEY DEFAULT uuid_generate_v4(),
+    name VARCHAR(36) NOT NULL,
     description VARCHAR NOT NULL,
-    brew_time_seconds int
+    brew_time_seconds INT
 );
 CREATE INDEX IF NOT EXISTS ind_recipes_name ON recipes (name);
 -- +goose StatementEnd

@@ -1,4 +1,5 @@
 
-
 # env file
 .env
+
+.idea/vcs.xml

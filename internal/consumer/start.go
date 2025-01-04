@@ -90,7 +90,7 @@ func ConsumerRecipreStart(brokers, versionInit, group, topics, assignor string, 
 	/**
 	 * Setup a new Sarama consumer group
 	 */
-	// добавить usecase и базу данных
+	// добавить servicer и базу данных
 
 	consumer := NewRecipesConsumer(api)
 

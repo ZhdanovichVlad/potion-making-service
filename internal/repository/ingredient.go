@@ -4,20 +4,37 @@ import (
 	"context"
 	"fmt"
 	"github.com/ZhdanovichVlad/potion-making-service/branches/internal/entity"
+	"github.com/jackc/pgx/v4"
 )
 
-func (s *Storage) GetIngredients(ctx context.Context) ([]entity.Ingredient, error) {
+const (
+	getIngredients = "get_ingredients"
+	saveIngredient = "save_ingredient"
+)
+
+type ingredientsStorage struct {
+	db *pgx.Conn
+}
+
+func NewIngredientsStorage(db *pgx.Conn) *ingredientsStorage {
+	return &ingredientsStorage{db: db}
+}
+
+func (s *ingredientsStorage) Close(ctx context.Context) {
+	s.db.Close(ctx)
+}
+
+func (s *ingredientsStorage) GetIngredients(ctx context.Context) ([]entity.Ingredient, error) {
 
 	var ingredients []entity.Ingredient
 
-	query := "SELECT * FROM ingredients"
-	stmt, err := s.db.Prepare(query)
-	defer stmt.Close()
+	query := "SELECT * FROM ingredients"               // Можно ли вынести в отдельный метод и инициализировать только 1 раз
+	_, err := s.db.Prepare(ctx, getIngredients, query) // Можно ли вынести в отдельный метод и инициализировать только 1 раз
 	if err != nil {
 		return nil, fmt.Errorf("query preparation error: %w", err)
-	}
+	} // Можно ли вынести в отдельный метод и инициализировать только 1 раз
 
-	rows, err := stmt.QueryContext(ctx)
+	rows, err := s.db.Query(ctx, getIngredients)
 	defer rows.Close()
 	if err != nil {
 		return nil, fmt.Errorf("executing query error: %w", err)
@@ -37,14 +54,16 @@ func (s *Storage) GetIngredients(ctx context.Context) ([]entity.Ingredient, erro
 	return ingredients, nil
 }
 
-func (s *Storage) SaveIngredient(ctx context.Context, ingredient entity.Ingredient) error {
-	query := "UNSERT INTO ingredients (name, description) VALUES ($1, $2)"
-	stmt, err := s.db.Prepare(query)
+func (s *ingredientsStorage) SaveIngredient(ctx context.Context, ingredient entity.Ingredient) error {
+
+	query := "INSERT INTO ingredients (name, description) VALUES ($1, $2)"
+
+	_, err := s.db.Prepare(ctx, saveIngredient, query)
 	if err != nil {
 		return fmt.Errorf("preparation query error: %w", err)
 	}
 
-	_, err = stmt.ExecContext(ctx, ingredient.Name, ingredient.Description)
+	_, err = s.db.Exec(ctx, saveIngredient, ingredient.Name, ingredient.Description)
 	if err != nil {
 		return fmt.Errorf("executing query error: %w", err)
 	}

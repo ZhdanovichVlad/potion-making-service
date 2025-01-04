@@ -3,7 +3,7 @@
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 CREATE TABLE IF NOT EXISTS recipes (
     id UUID NOT NULL PRIMARY KEY DEFAULT uuid_generate_v4(),
-    name VARCHAR(36) NOT NULL,
+    name VARCHAR(36) UNIQUE NOT NULL,
     description VARCHAR NOT NULL,
     brew_time_seconds INT
 );

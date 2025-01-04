@@ -7,7 +7,7 @@ import (
 	"net/http"
 )
 
-// ImplResponse
+// GetAllRecipes returns an array of Recipes
 func (s *PotionAPIServer) GetAllRecipes(ctx context.Context) (openapi.ImplResponse, error) {
 
 	recipes, err := s.repo.GetRecipes(ctx)

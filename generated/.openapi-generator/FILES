@@ -5,8 +5,10 @@ api/openapi.yaml
 go.mod
 main.go
 openapi/api.go
-openapi/api_default.go
-openapi/api_default_service.go
+openapi/api_ingredient.go
+openapi/api_ingredient_service.go
+openapi/api_recipe.go
+openapi/api_recipe_service.go
 openapi/error.go
 openapi/helpers.go
 openapi/impl.go

@@ -7,6 +7,7 @@ import (
 
 type RecipesRepository interface {
 	GetRecipes(ctx context.Context) ([]entity.Recipe, error)
+	SaveRecipeAndIngredient(ctx context.Context, newRecipe entity.CreateRecipe) error
 }
 
 type IngredientRepository interface {

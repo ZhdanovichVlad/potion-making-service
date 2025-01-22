@@ -70,3 +70,63 @@ func (s *recipesStorage) SaveRecipe(ctx context.Context, recipe entity.Recipe) e
 	}
 	return nil
 }
+
+func (s *recipesStorage) SaveRecipeAndIngredient(ctx context.Context, newRecipe entity.CreateRecipe) error {
+	queryInsertRecipe := "INSERT INTO recipes (name, description, brew_time_seconds) VALUES ($1, $2, $3)"
+	queryInsertIngredient := "INSERT INTO ingredients (name, description) VALUES ($1, $2)"
+
+	tx, err := s.db.Begin(ctx)
+	if err != nil {
+		return fmt.Errorf("transaction begin error")
+	}
+
+	_, err = tx.Prepare(ctx, saveRecipe, queryInsertRecipe)
+	if err != nil {
+		errRollback := tx.Rollback(ctx)
+		if errRollback != nil {
+			return fmt.Errorf(" rollback error: %w with an error when preparation query insert recipe error: %w", errRollback, err)
+		}
+		return fmt.Errorf("preparation query insert recipe error: %w", err)
+	}
+
+	_, err = tx.Exec(ctx, saveRecipe, newRecipe.Name, newRecipe.Description, newRecipe.BrewTimeSeconds)
+	if err != nil {
+		errRollback := tx.Rollback(ctx)
+		if errRollback != nil {
+			return fmt.Errorf(" rollback error: %w with an error when inserting the recipe.: %w", errRollback, err)
+		}
+
+		return fmt.Errorf("saving recipe error: %w", err)
+	}
+
+	_, err = tx.Prepare(ctx, saveIngredient, queryInsertIngredient)
+	if err != nil {
+		errRollback := tx.Rollback(ctx)
+		if errRollback != nil {
+			return fmt.Errorf(" rollback error: %w with an error when preparation query insert ingredient error: %w", errRollback, err)
+		}
+		return fmt.Errorf("preparation query nsert ingredient error: %w", err)
+	}
+
+	for _, ingredient := range newRecipe.Ingredients {
+
+		_, err = tx.Exec(ctx, saveIngredient, ingredient.Name, ingredient.Description)
+		if err != nil {
+			errRollback := tx.Rollback(ctx)
+			if errRollback != nil {
+				return fmt.Errorf(" rollback error: %w with an error when inserting the ingredient.: %w", errRollback, err)
+			}
+			return fmt.Errorf("executing query error: %w", err)
+		}
+	}
+	err = tx.Commit(ctx)
+	if err != nil {
+		errRollback := tx.Rollback(ctx)
+		if errRollback != nil {
+			return fmt.Errorf(" rollback error: %w with an error when commiting changes: %w", errRollback, err)
+		}
+		return fmt.Errorf("commiting changes error: %w", err)
+	}
+
+	return nil
+}

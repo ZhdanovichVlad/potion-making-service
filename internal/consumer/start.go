@@ -4,12 +4,17 @@ import (
 	"context"
 	"errors"
 	"flag"
+	"github.com/ZhdanovichVlad/potion-making-service/branches/internal/processor"
+	"github.com/ZhdanovichVlad/potion-making-service/branches/internal/repository"
+	"github.com/jackc/pgx/v4"
 	"log"
+	"log/slog"
 	"os"
 	"os/signal"
 	"strings"
 	"sync"
 	"syscall"
+	"time"
 
 	"github.com/IBM/sarama"
 )
@@ -25,16 +30,22 @@ import (
 //	verbose  = false
 //)
 
-func ConsumerRecipreStart(brokers, versionInit, group, topics, assignor string, api RecipesSaver) {
+func ConsumerRecipeStart() {
 
 	var (
 		oldest  = true
 		verbose = false
 	)
 
+	brokers := os.Getenv("brokers")
+	versionStr := os.Getenv("version")
+	group := os.Getenv("group")
+	topics := os.Getenv("topics")
+	assignor := os.Getenv("assignor")
+
 	flag.StringVar(&brokers, "brokers", "", "Kafka bootstrap brokers to connect to, as a comma separated list")
 	flag.StringVar(&group, "group", "", "Kafka consumer group definition")
-	flag.StringVar(&versionInit, "version", sarama.DefaultVersion.String(), "Kafka cluster version")
+	flag.StringVar(&versionStr, "version", sarama.DefaultVersion.String(), "Kafka cluster version")
 	flag.StringVar(&topics, "topics", "", "Kafka topics to be consumed, as a comma separated list")
 	flag.StringVar(&assignor, "assignor", "range", "Consumer group partition assignment strategy (range, roundrobin, sticky)")
 	flag.BoolVar(&oldest, "oldest", true, "Kafka consumer consume initial offset from oldest")
@@ -60,7 +71,7 @@ func ConsumerRecipreStart(brokers, versionInit, group, topics, assignor string, 
 		sarama.Logger = log.New(os.Stdout, "[sarama] ", log.LstdFlags)
 	}
 
-	version, err := sarama.ParseKafkaVersion(versionInit)
+	version, err := sarama.ParseKafkaVersion(versionStr)
 	if err != nil {
 		log.Panicf("Error parsing Kafka version: %v", err)
 	}
@@ -90,9 +101,33 @@ func ConsumerRecipreStart(brokers, versionInit, group, topics, assignor string, 
 	/**
 	 * Setup a new Sarama consumer group
 	 */
-	// добавить servicer и базу данных
+	// добавить service и базу данных
 
-	consumer := NewRecipesConsumer(api)
+	logger := slog.New(slog.NewJSONHandler(os.Stdout, nil))
+
+	pgDSN := os.Getenv("PG_DSN")
+	if pgDSN == "" {
+		logger.Error("PG_DSN environment variable not set")
+		os.Exit(1)
+	}
+
+	ctxDbOpen, cancelDbOpen := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancelDbOpen()
+
+	db, err := pgx.Connect(ctxDbOpen, pgDSN)
+	if err != nil {
+		logger.Error("error opening database: %v", err)
+		os.Exit(1)
+	}
+
+	ctxDbClose, cancelDbClose := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancelDbClose()
+	defer db.Close(ctxDbClose)
+
+	recipesRepositories := repository.NewRecipesStorage(db)
+	recipesProcessors := processor.NewRecipesAPIServer(recipesRepositories)
+
+	consumer := NewRecipesConsumer(recipesProcessors, logger)
 
 	ctx, cancel := context.WithCancel(context.Background())
 	client, err := sarama.NewConsumerGroup(strings.Split(brokers, ","), group, config)

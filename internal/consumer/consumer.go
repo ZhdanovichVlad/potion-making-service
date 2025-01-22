@@ -1,7 +1,9 @@
 package consumer
 
 import (
-	"log"
+	"github.com/ZhdanovichVlad/potion-making-service/branches/internal/entity"
+	"github.com/goccy/go-json"
+	"log/slog"
 
 	"github.com/IBM/sarama"
 )
@@ -9,10 +11,11 @@ import (
 type RecipesConsumer struct {
 	Ready        chan bool
 	recipesSaver RecipesSaver
+	logger       *slog.Logger
 }
 
-func NewRecipesConsumer(saver RecipesSaver) *RecipesConsumer {
-	return &RecipesConsumer{Ready: make(chan bool), recipesSaver: saver}
+func NewRecipesConsumer(saver RecipesSaver, log *slog.Logger) *RecipesConsumer {
+	return &RecipesConsumer{Ready: make(chan bool), recipesSaver: saver, logger: log}
 }
 
 // Setup is run at the beginning of a new session, before ConsumeClaim
@@ -39,12 +42,18 @@ func (consumer *RecipesConsumer) ConsumeClaim(session sarama.ConsumerGroupSessio
 		select {
 		case message, ok := <-claim.Messages():
 			if !ok {
-				log.Printf("message channel was closed")
+				consumer.logger.Info("message channel was closed")
 				return nil
 			}
-			log.Printf("Message claimed: value = %s, timestamp = %v, topic = %s", string(message.Value), message.Timestamp, message.Topic)
+			consumer.logger.Info("Message claimed: value = %s, timestamp = %v, topic = %s", string(message.Value), message.Timestamp, message.Topic)
+			recipe := entity.CreateRecipe{}
+			recipe.Ingredients = make([]entity.Ingredient, 0)
+			err := json.Unmarshal(message.Value, recipe)
+			if err != nil {
+				consumer.logger.Error("cannot unmarshal massage", slog.Any("error :", err))
+			}
 
-			if err := consumer.recipesSaver.SaveRecipe(session.Context(), message.Value); err != nil {
+			if err := consumer.recipesSaver.SaveRecipe(session.Context(), recipe); err != nil {
 				return err
 			}
 

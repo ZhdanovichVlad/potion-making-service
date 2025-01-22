@@ -4,6 +4,7 @@ import (
 	"Context"
 	"fmt"
 	"github.com/ZhdanovichVlad/potion-making-service/branches/generated/openapi"
+	"github.com/ZhdanovichVlad/potion-making-service/branches/internal/entity"
 )
 
 type RecipesAPIServer struct {
@@ -21,7 +22,7 @@ func (s *RecipesAPIServer) GetAllRecipes(ctx context.Context) (openapi.ImplRespo
 
 	recipes, err := s.repo.GetRecipes(ctx)
 	if err != nil {
-		return openapi.Response(500, nil), fmt.Errorf("failed to get recipes: %w", err)
+		return openapi.ImplResponse{}, fmt.Errorf("failed to get recipes: %w", err)
 	}
 
 	apiResponse := make([]openapi.Recipe, 0, len(recipes))
@@ -30,4 +31,14 @@ func (s *RecipesAPIServer) GetAllRecipes(ctx context.Context) (openapi.ImplRespo
 	}
 
 	return openapi.Response(200, apiResponse), err
+}
+
+// Save the recipe and ingredients in the database
+func (s *RecipesAPIServer) SaveRecipe(ctx context.Context, newRecipe entity.CreateRecipe) error {
+
+	err := s.repo.SaveRecipeAndIngredient(ctx, newRecipe)
+	if err != nil {
+		return err
+	}
+	return nil
 }

@@ -22,31 +22,35 @@ const (
 func main() {
 	logger := slog.New(slog.NewJSONHandler(os.Stdout, nil))
 
-	pg_dsn := os.Getenv("PG_DSN")
-	if pg_dsn == "" {
+	pgDSN := os.Getenv("PG_DSN")
+	if pgDSN == "" {
 		logger.Error("PG_DSN environment variable not set")
-		log.Fatal("PG_DSN environment variable not set")
+		os.Exit(1)
 	}
 
 	ctxDbOpen, cancelDbOpen := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancelDbOpen()
 
-	db, err := pgx.Connect(ctxDbOpen, pg_dsn)
+	db, err := pgx.Connect(ctxDbOpen, pgDSN)
 	if err != nil {
 		logger.Error("error opening database: %v", err)
-		log.Fatal("error opening database: %v", err)
+		os.Exit(1)
 	}
 
-	recipesRepository := repository.NewRecipesStorage(db)
-	recipesProcessor := processor.NewRecipesAPIServer(recipesRepository)
-	recipesService := openapi.NewRecipeAPIController(recipesProcessor)
+	ctxDbClose, cancelDbClose := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancelDbClose()
+	defer db.Close(ctxDbClose)
 
-	ingredientsRepository := repository.NewIngredientsStorage(db)
-	ingredientsProcessor := processor.NewIngredientAPIServer(ingredientsRepository)
-	ingredientAPIController := openapi.NewIngredientAPIController(ingredientsProcessor)
+	recipesRepositories := repository.NewRecipesStorage(db)
+	recipesProcessors := processor.NewRecipesAPIServer(recipesRepositories)
+	recipesService := openapi.NewRecipeAPIController(recipesProcessors)
 
-	host_port := os.Getenv("HOST_PORT")
-	if host_port == "" {
+	ingredientsRepositories := repository.NewIngredientsStorage(db)
+	ingredientsProcessors := processor.NewIngredientAPIServer(ingredientsRepositories)
+	ingredientAPIController := openapi.NewIngredientAPIController(ingredientsProcessors)
+
+	hostPort := os.Getenv("HOST_PORT")
+	if hostPort == "" {
 		logger.Error("HOST_PORT environment variable not set")
 		log.Fatal("HOST_PORT environment variable not set")
 	}
@@ -54,22 +58,25 @@ func main() {
 	router := openapi.NewRouter(ingredientAPIController, recipesService)
 
 	server := &http.Server{
-		Addr:    ":8080",
+		Addr:    hostPort,
 		Handler: router,
 	}
 
-	stop := make(chan os.Signal, 1)
-	signal.Notify(stop, os.Interrupt, syscall.SIGTERM)
+	//stop := make(chan os.Signal, 1)
+	//signal.Notify(stop, os.Interrupt, syscall.SIGTERM)
+
+	ctxEnd, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
+	defer stop()
 
 	go func() {
-		logger.Info("starting server on server port", host_port)
+		logger.Info("starting server on server", slog.String("port", hostPort))
 		if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
 			logger.Error("listenAndServer error :%v", err)
 		}
 
 	}()
 
-	<-stop
+	<-ctxEnd.Done()
 	logger.Info("shutting down server")
 
 	ctxServer, cancelServer := context.WithTimeout(context.Background(), 5*time.Second)
@@ -81,12 +88,5 @@ func main() {
 
 	logger.Info("server exited gracefully")
 
-	ctxDbClose, cancelDbClose := context.WithTimeout(context.Background(), 5*time.Second)
-	defer cancelDbClose()
-
-	logger.Info("closing database connection")
-	db.Close(ctxDbClose)
-
 	logger.Info("app exited gracefully")
-
 }

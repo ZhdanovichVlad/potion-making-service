@@ -1,8 +1,10 @@
 package consumer
 
-import "context"
+import (
+	"context"
+	"github.com/ZhdanovichVlad/potion-making-service/branches/internal/entity"
+)
 
 type RecipesSaver interface {
-	SaveRecipe(ctx context.Context, binary []byte) error
+	SaveRecipe(ctx context.Context, recipe entity.CreateRecipe) error
 }
-

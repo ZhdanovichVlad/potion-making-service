@@ -1,0 +1,139 @@
+openapi: 3.0.0
+info:
+  description: "This is a sample server Petstore server. For this sample, you can\
+    \ use the api key `special-key` to test the authorization filters."
+  license:
+    name: Apache-2.0
+    url: https://www.apache.org/licenses/LICENSE-2.0.html
+  title: OpenAPI potion-making-services
+  version: 1.0.0
+servers:
+- url: /
+tags:
+- description: everything about recipe
+  name: recipe
+- description: everything about ingredient
+  name: ingredient
+paths:
+  /recipes:
+    get:
+      description: returns an array of recipes from a recipe table
+      operationId: GetAllRecipes
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                items:
+                  $ref: '#/components/schemas/ApiResponseRecipes'
+                type: array
+          description: successful operation
+        "404":
+          description: not found
+        "500":
+          description: internal server error
+      summary: returns an array of recipes
+      tags:
+      - recipe
+  /ingredients:
+    get:
+      description: returns an array of ingredients from a ingredient table.
+      operationId: GetAllIngredients
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                items:
+                  $ref: '#/components/schemas/ApiResponseIngredients'
+                type: array
+          description: successful operation
+        "404":
+          description: not found
+        "500":
+          description: internal server error
+      summary: returns an array of ingredients
+      tags:
+      - ingredient
+components:
+  schemas:
+    Recipe:
+      description: Description of recipe in the storage database
+      example:
+        name: name
+        brew_time_seconds: 1
+        description: description
+        id: 6
+      properties:
+        id:
+          format: int64
+          type: integer
+        name:
+          type: string
+        description:
+          type: string
+        brew_time_seconds:
+          format: int64
+          type: integer
+      title: Recipe
+      type: object
+    Ingredient:
+      description: Description of ingredient in the storage database
+      example:
+        name: name
+        description: description
+        id: 6
+      properties:
+        id:
+          format: int64
+          type: integer
+        name:
+          type: string
+        description:
+          type: string
+      title: Ingredient
+      type: object
+    ApiResponseRecipes:
+      description: Response with a list of recipes
+      example:
+        recipes:
+        - name: name
+          brew_time_seconds: 1
+          description: description
+          id: 6
+        - name: name
+          brew_time_seconds: 1
+          description: description
+          id: 7
+        code: 200
+      properties:
+        code:
+          format: int32
+          type: integer
+        recipes:
+          items:
+            $ref: '#/components/schemas/Recipe'
+          type: array
+      title: Recipes response
+      type: object
+    ApiResponseIngredients:
+      description: Response with a list of ingredients
+      example:
+        code: 200
+        ingredients:
+        - name: name
+          description: description
+          id: 6
+        - name: name
+          description: description
+          id: 7
+      properties:
+        code:
+          format: int32
+          type: integer
+        ingredients:
+          items:
+            $ref: '#/components/schemas/Ingredient'
+          type: array
+      title: Ingredients response
+      type: object

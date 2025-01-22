@@ -1,4 +1,8 @@
 
-
 # env file
 .env
+
+.idea/vcs.xml
+
+generated/openapi/api_ingredient_service.go
+generated/openapi/api_recipe_service.go

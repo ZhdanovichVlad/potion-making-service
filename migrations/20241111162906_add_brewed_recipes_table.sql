@@ -1,16 +1,18 @@
 -- +goose Up
 -- +goose StatementBegin
 CREATE TABLE IF NOT EXISTS brewed_recipes (
-    id_Recipe BIGINT NOT NULL,
-    id_witch BIGINT NOT NULL,
+    recipe_id UUID NOT NULL,
+    witch_id UUID NOT NULL,
     status VARCHAR NOT NULL,
-    createdat TIMESTAMP NOT NULL,
-    updatetat TIMESTAMP NOT NULL
-);
+    created_at TIMESTAMP NOT NULL,
+    updated_at TIMESTAMP NOT NULL,
+    FOREIGN KEY (recipe_id) REFERENCES recipes(id),
+    FOREIGN KEY (witch_id) REFERENCES witches(id)
+    );
 -- +goose StatementEnd
 
 
 -- +goose Down
 -- +goose StatementBegin
-DROP TABLE IF EXISTS brewed_recipes
+DROP TABLE IF EXISTS brewed_recipes;
 -- +goose StatementEnd
